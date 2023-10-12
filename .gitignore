@@ -1,0 +1,7 @@
+/data/imagenet
+/experiments/.cache/imagenet
+/lib/__pycache__/
+/models/__pycache__/
+/datasets/__pycache__/
+/models/clip/__pycache__/
+/models/clip/bpe_simple_vocab_16e6.txt.gz
