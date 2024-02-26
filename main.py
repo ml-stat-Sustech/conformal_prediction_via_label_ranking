@@ -1,31 +1,17 @@
-
-
-import os, sys
-sys.path.insert(1, os.path.join(sys.path[0], '..'))
-
 import numpy as np
 import torch
 import random
 import torch.backends.cudnn as cudnn
-import itertools
-import pandas as pd
-import os 
-import pathlib
-import os
 import argparse
 from tqdm import tqdm
-from models.connetor import build_common_model
+from models.utils import build_common_model
 from lib.utils import *
-from lib.metrics import *
 from lib.post_process import*
-from lib.predictor import *
+from lib.saps import *
 
 
 class experiment:
     def __init__(self,model_name,alpha,predictor,dataset_name,post_hoc,num_trials) -> None:
-        """
-        三个基本的参数
-        """
         self.model_name = model_name
         self.alpha=  alpha
         self.predictor = predictor
@@ -67,12 +53,10 @@ class experiment:
             print(f'\n\tTop1: {np.median(top1s[0:i+1]):.3f}, Top5: {np.median(top5s[0:i+1]):.3f}, Coverage: {np.median(coverages[0:i+1]):.3f}, Size: {np.median(sizes[0:i+1]):.3f}, escv: {np.median(escvs[0:i+1]):.3f}\033[F', end='')
         print('')
         
-
-
         # Svae the median results
-        
         res_dict={}
         res_dict["Model"] = self.model_name
+        res_dict["Dataset"] = self.dataset_name
         res_dict["Predictor"] = self.predictor
         res_dict["alpha"] = self.alpha
         res_dict["post_hc"] = self.post_hoc
@@ -81,8 +65,6 @@ class experiment:
         res_dict["Coverage"] = np.round(np.median(coverages),4)
         res_dict["Size"] = np.round(np.median(sizes),4)
         res_dict["ESCV"] = np.round(np.median(escvs),4)
-      
-    
         return res_dict
 
 
@@ -91,7 +73,6 @@ class experiment:
         alpha = self.alpha
         
         logits_cal, logits_val,self.cal_indices,self.val_indices= split2(self.logits, n_data_conf, len(self.logits)-n_data_conf) 
-    
 
 
         ######################
@@ -124,13 +105,8 @@ class experiment:
         allow_zero_sets = True
         randomized = True
         
-        if self.predictor == "APS":
-            self.conformal_model = APS(loader_cal, alpha=alpha,randomized=randomized,allow_zero_sets=allow_zero_sets)
-        elif self.predictor == "RAPS":
-            self.conformal_model = RAPS(loader_cal, alpha=alpha, kreg=None, lamda=None, randomized=randomized, allow_zero_sets=allow_zero_sets, pct_paramtune=pct_paramtune, batch_size=bsz, lamda_criterion='size')
-        elif self.predictor =="SAPS":
+        if self.predictor == "SAPS":
             self.conformal_model = SAPS(loader_cal, alpha=alpha,rank_pen=None,randomized=randomized,allow_zero_sets=allow_zero_sets,batch_size=bsz,pct_paramtune=pct_paramtune)
-        
         else:
             raise NotImplementedError
 
@@ -187,8 +163,6 @@ class experiment:
             correct_array=[]
             topk=[]
             for i, (logits, target) in enumerate(val_loader):
-                I,_,_ = sort_sum(logits.numpy())
-                topk.append(np.where((I - target.view(-1,1).numpy())==0)[1]+1) 
                 target = target.cuda()
                 logits = logits.cuda()
                 
@@ -204,7 +178,6 @@ class experiment:
                         correct_array.append(1)
                     else:
                         correct_array.append(0)
-                        
                 
                 # measure accuracy and record loss
                 prec1, prec5 = accuracy(logits, target, topk=(1, 5))
@@ -219,11 +192,7 @@ class experiment:
                 N = N + logits.shape[0]
                 
         escv= self.cal_escv(size_array,correct_array)
-        
-
-
         return top1.avg, top5.avg, np.mean(correct_array), np.mean(size_array),escv
-
 
     def _fix_randomness(self,seed=0):
         ### Fix randomness 
@@ -233,7 +202,6 @@ class experiment:
         random.seed(seed)
 
 
-
     def cal_escv(self, size_array,correct_array):
         """
         computing the Each-Size Coverage Violation (escv)
@@ -241,7 +209,6 @@ class experiment:
         size_array = np.array(size_array)
         correct_array = np.array(correct_array)
 
-                
         escv =0
         for i in range(1,self.num_calsses+1):
             temp_index = np.argwhere( size_array == i )
@@ -250,17 +217,8 @@ class experiment:
                 
                 stratum_violation = max(0,(1-self.alpha) - np.mean(correct_array[temp_index]))
                 escv = max(escv, stratum_violation)
-                
-        
-                
         return escv
     
-
-
-    
-        
-
-
 
 if __name__ == "__main__":
     """
@@ -271,33 +229,20 @@ if __name__ == "__main__":
     
 
 
-    parser.add_argument('--dataset_name', '-s', type=str, default='imagenet', help='dataset name.')
-    parser.add_argument('--gpu', type=int, default=0, help='chose gpu id')
+    parser.add_argument('--dataset', type=str, default='imagenet', help='dataset')
+    parser.add_argument('--model', type=str, default='ResNeXt101', help='model')
+    parser.add_argument('--predictor', type=str, default='SAPS', help='the predictor of CP.')
+    parser.add_argument('--alpha', type=float, default=0.1, help='the error rate.')
     parser.add_argument('--trials', type=int, default=1, help='number of trials')
+    parser.add_argument('--post_hoc', type=str, default="oTS", help='the confidence calibration method.')
     
     args = parser.parse_args()
-    os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu)
-
-    ### Fix randomness d
-    dataset_name = args.dataset_name
-    num_trials = args.trials
-    cache_path = str(pathlib.Path(__file__).parent.absolute()) + '/.cache/' + dataset_name
-        
-    ### Configure experiment
-
-    
-    modelnames = ['ResNeXt101','ResNet152','ResNet101','ResNet50','ResNet18','DenseNet161','VGG16','Inception','ShuffleNet',"ViT",'DeiT',"CLIP"]
-        
-    alphas = [0.1]
-
-    post_hocs = ["oTS"]
-    predictors = ["APS","RAPS","SAPS"]
-    
-    params1 = list(itertools.product(post_hocs,alphas))
-    params2 = list(itertools.product(modelnames,predictors))
-    m1= len(params1)
-    m2= len(params2)
-    
+    dataset_name = args.dataset
+    model = args.model
+    num_trials = args.trials        
+    alpha = args.alpha
+    post_hoc = args.post_hoc
+    predictor = args.predictor
     
     if dataset_name==  "imagenet":
         n_data_conf = 30000
@@ -308,24 +253,10 @@ if __name__ == "__main__":
     pct_paramtune = 0.2
     bsz = 320
     cudnn.benchmark = True
-    
-    
-    df = pd.DataFrame()
-    filename ="FinalResult_{}.csv".format(post_hocs[0])
-    res_filepath = os.path.join(cache_path,filename)
-    for i  in range(m1):
-        ### Perform the experiment
-        post_hoc,alpha = params1[i]
-        
-        for j in range(m2):
-            model_name, predictor = params2[j]
-            print(f'Model: {model_name} | Desired coverage: {1-alpha} | Predictor: {predictor}| Calibration: {post_hoc}')
+    print(f'Model: {model} | Desired coverage: {1-alpha} | Predictor: {predictor}| Calibration: {post_hoc}')
+    this_experiment =  experiment(model,alpha,predictor,dataset_name,post_hoc,num_trials)
+    out = this_experiment.run( n_data_conf, n_data_val, pct_paramtune, bsz) 
 
-            this_experiment =  experiment(model_name,alpha,predictor,dataset_name,post_hoc,num_trials)
-            out = this_experiment.run( n_data_conf, n_data_val, pct_paramtune, bsz) 
-            
-            df = pd.concat([df,pd.DataFrame.from_dict(out,orient='index').T], ignore_index=True) 
-            df.to_csv(res_filepath, index=False)
                 
                 
     

@@ -1,0 +1,5 @@
+Model,Dataset,Predictor,alpha,post_hc,Top1,Top5,Coverage,Size,ESCV
+ResNeXt101,imagenet,SAPS,0.1,oTS,0.7925,0.9454,0.9004,1.8192,0.3301
+ResNet152,imagenet,SAPS,0.1,oTS,0.7829,0.9406,0.8979,1.891,0.3932
+ResNet101,imagenet,SAPS,0.1,oTS,0.7746,0.9334,0.8954,2.0235,0.3743
+ResNet50,imagenet,SAPS,0.1,oTS,0.7618,0.9286,0.8982,2.2292,0.3455

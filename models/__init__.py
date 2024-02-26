@@ -1,1 +1,1 @@
-from .connetor import build_common_model
+from .utils import build_common_model

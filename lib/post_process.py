@@ -3,14 +3,17 @@ import numpy as np
 
 
 
-def postHocLogits(transforamtion,logits_loader,device,num_classes):
-    """
-    Transform the logits by the calibration technology
-    """
+def postHocLogits(transforamtion,logits_loader,device,num_classes,mask=None):
+
     transforamtion.eval()
     transforamtion.to(device)
-
-    
+   
+    if isinstance(mask,np.ndarray):
+        num_classes = len(mask)
+    elif mask==None:
+        mask=np.arange(num_classes)
+    else:
+        raise NotImplementedError
     logits = torch.zeros((len(logits_loader.dataset), num_classes)) # 1000 classes in Imagenet.
     labels = torch.zeros((len(logits_loader.dataset),))
     i = 0
@@ -23,17 +26,15 @@ def postHocLogits(transforamtion,logits_loader,device,num_classes):
     dataset_logits = torch.utils.data.TensorDataset(logits, labels.long()) 
     return dataset_logits
 
-
-
 import torch.nn as nn 
 
 
 class PostHoc(nn.Module):
-
-
     def forward(self,batch_logits):
         return batch_logits
 
+
+    
 
 
 class OptimalTeamperatureScaling(PostHoc):
@@ -47,3 +48,7 @@ class OptimalTeamperatureScaling(PostHoc):
         return batch_logits/self.temperature
     
     
+    
+
+
+
