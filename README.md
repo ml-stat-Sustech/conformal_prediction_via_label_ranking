@@ -9,10 +9,10 @@ pip install -r requirements.txt
 
 Producing the prediction sets:
 ```
-python experiments/main.py --dataset_name  imagenet  --trials 10
+python main.py --dataset  imagenet  --trials 10
 ```
 with the following arguments:
- - dataset_name: the name of dataset.
+ - dataset: the name of dataset.
  - trials: the number of trials.
 
 
