@@ -106,8 +106,7 @@ def accuracy(output, target, topk=(1,)):
 def split2(dataset, n1, n2):
     data1, temp = torch.utils.data.random_split(dataset, [n1, dataset.tensors[0].shape[0]-n1])
     data2, _ = torch.utils.data.random_split(temp, [n2, dataset.tensors[0].shape[0]-n1-n2])
-    # data2, _ = torch.utils.data.random_split(temp, [n2, dataset.tensors[0].shape[0]-n1-n2],torch.Generator())
-    return data1, data2,data1.indices,np.array(temp.indices)[np.array(data2.indices)].tolist()
+    return data1, data2
 
 
 # Computes logits and targets from a model and loader

@@ -1,6 +1,6 @@
 import torch
 import numpy as np
-
+import torch.nn as nn 
 
 
 def postHocLogits(transforamtion,logits_loader,device,num_classes,mask=None):
@@ -23,11 +23,7 @@ def postHocLogits(transforamtion,logits_loader,device,num_classes,mask=None):
             logits[i:(i+batch_logits.shape[0]), :] = batch_logits
             labels[i:(i+batch_logits.shape[0])] = targets.cpu()
             i = i + batch_logits.shape[0]
-    dataset_logits = torch.utils.data.TensorDataset(logits, labels.long()) 
-    return dataset_logits
-
-import torch.nn as nn 
-
+    return logits, labels.long()
 
 class PostHoc(nn.Module):
     def forward(self,batch_logits):

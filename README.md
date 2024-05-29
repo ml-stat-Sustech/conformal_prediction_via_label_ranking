@@ -1,15 +1,22 @@
 # Conformal Prediction for Deep Classifier via Label Ranking
-This repository is the offical  implementation  for the paper: [Conformal Prediction for Deep Classifier via Label Ranking](https://arxiv.org/abs/2310.06430).
+This repository is the offical implementation for the paper: [Conformal Prediction for Deep Classifier via Label Ranking](https://arxiv.org/abs/2310.06430).
 
-## Usage
-We use Python 3.9, and other packages can be installed by:
+## How to Install
+This code is built on the awesome toolbox [TorchCP](https://github.com/ml-stat-Sustech/torchCP) that you need to install first. We use Python 3.9, and TorchCP can be installed by:
+```
+pip install torchcp
+```
+Simply follow the instructions described here to install TorchCP as well as PyTorch. After that, other packages can be installed by:
+
 ```
 pip install -r requirements.txt
 ```
+Then, you are ready to go.
 
+## How to Run
 Producing the prediction sets:
 ```
-python main.py --dataset  imagenet  --trials 10
+python main.py --dataset imagenet  --trials 10
 ```
 with the following arguments:
  - dataset: the name of dataset.
