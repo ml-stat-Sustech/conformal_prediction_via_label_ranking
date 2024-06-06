@@ -10,7 +10,7 @@ from lib.post_process import*
 
 import torchcp
 from torchcp.classification.predictors import SplitPredictor
-from torchcp.classification.scores import SAPS
+from torchcp.classification.scores import SAPS,APS
 from torchcp.classification.utils.metrics import Metrics
 
 metrics = Metrics()
@@ -71,31 +71,38 @@ class experiment:
         
         # optimzing the temperature
         transformation =  self.get_optimal_parameters(transformation, cal_loader)            
-        logits_cal, labels_cal = postHocLogits(transformation,cal_loader,self.device,self.num_calsses )
+        cal_logits, cal_labels = postHocLogits(transformation,cal_loader,self.device,self.num_calsses )
         val_logits, val_lables = postHocLogits(transformation,val_loader,self.device,self.num_calsses )
-
-        ################
-        # Choose the best ranking weight
-        ################
-        pc_indices = int(logits_cal.size(0)*pct_paramtune)
-        indices = torch.randperm(logits_cal.size(0))
-        tuning_logits = logits_cal[indices[:pc_indices]]
-        tuning_labels = labels_cal[indices[:pc_indices]]
-        cal_logits = logits_cal[indices[pc_indices:]]
-        cal_labels = labels_cal[indices[pc_indices:]]
         
-        ranking_weight_star = 0
-        best_set_size = self.num_calsses
-        for temp_ranking_weight in np.insert(np.arange(0.05,0.65,0.05), 0, 0.02): 
-            predictor = SplitPredictor(SAPS(temp_ranking_weight))
-            predictor.calculate_threshold(tuning_logits,tuning_labels, alpha)       
-            prediction_sets = predictor.predict_with_logits(tuning_logits)
-            average_size = metrics('average_size')(prediction_sets, tuning_labels)
-            if average_size < best_set_size:
-                ranking_weight_star = temp_ranking_weight
-                best_set_size = average_size
+        if self.predictor == "SAPS":
+
+            ################
+            # Choose the best ranking weight
+            ################
+            pc_indices = int(cal_logits.size(0)*pct_paramtune)
+            indices = torch.randperm(cal_logits.size(0))
+            tuning_logits = cal_logits[indices[:pc_indices]]
+            tuning_labels = cal_labels[indices[:pc_indices]]
+            cal_logits = cal_logits[indices[pc_indices:]]
+            cal_labels = cal_labels[indices[pc_indices:]]
             
-        predictor = SplitPredictor(SAPS(ranking_weight_star))
+            ranking_weight_star = 0
+            best_set_size = self.num_calsses
+            for temp_ranking_weight in np.insert(np.arange(0.05,0.65,0.05), 0, 0.02): 
+                predictor = SplitPredictor(SAPS(temp_ranking_weight))
+                predictor.calculate_threshold(tuning_logits,tuning_labels, alpha)       
+                prediction_sets = predictor.predict_with_logits(tuning_logits)
+                average_size = metrics('average_size')(prediction_sets, tuning_labels)
+                if average_size < best_set_size:
+                    ranking_weight_star = temp_ranking_weight
+                    best_set_size = average_size
+            predictor = SplitPredictor(SAPS(ranking_weight_star))
+        elif self.predictor == "APS":
+            predictor = SplitPredictor(APS())
+        else:
+            raise NotImplementedError
+            
+            
         predictor.calculate_threshold(cal_logits,cal_labels, alpha)
         prediction_sets = predictor.predict_with_logits(val_logits)
         coverage_rate = metrics('coverage_rate')(prediction_sets, val_lables)
