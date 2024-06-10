@@ -72,7 +72,7 @@ class experiment:
         # optimzing the temperature
         transformation = self.get_optimal_parameters(transformation, cal_loader)
         cal_logits, cal_labels = postHocLogits(transformation, cal_loader, self.device, self.num_calsses)
-        val_logits, val_lables = postHocLogits(transformation, val_loader, self.device, self.num_calsses)
+        val_logits, val_labels = postHocLogits(transformation, val_loader, self.device, self.num_calsses)
 
         if self.predictor == "SAPS":
 
@@ -104,9 +104,9 @@ class experiment:
 
         predictor.calculate_threshold(cal_logits, cal_labels, alpha)
         prediction_sets = predictor.predict_with_logits(val_logits)
-        coverage_rate = metrics('coverage_rate')(prediction_sets, val_lables)
-        average_size = metrics('average_size')(prediction_sets, val_lables)
-        prec1, prec5 = accuracy(val_logits, val_lables, topk=(1, 5))
+        coverage_rate = metrics('coverage_rate')(prediction_sets, val_labels)
+        average_size = metrics('average_size')(prediction_sets, val_labels)
+        prec1, prec5 = accuracy(val_logits, val_labels, topk=(1, 5))
 
         return prec1, prec5, coverage_rate, average_size
 
