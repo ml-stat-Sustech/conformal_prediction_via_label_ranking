@@ -38,11 +38,10 @@ with the following arguments:
 
 If you find this useful in your research, please consider citing:
 
-    @misc{huang2023conformal,
-      title={Conformal Prediction for Deep Classifier via Label Ranking}, 
-      author={Jianguo Huang and Huajun Xi and Linjun Zhang and Huaxiu Yao and Yue Qiu and Hongxin Wei},
-      year={2023},
-      eprint={2310.06430},
-      archivePrefix={arXiv},
-      primaryClass={cs.LG}}
+    @inproceedings{huang2023conformal,
+    title={Conformal Prediction for Deep Classifier via Label Ranking},
+    author={Jianguo Huang and Huajun Xi and Linjun Zhang and Huaxiu Yao and Yue Qiu and Hongxin Wei},
+    booktitle = {International Conference on Machine Learning (ICML)},
+    year = {2024}
+    }
 
